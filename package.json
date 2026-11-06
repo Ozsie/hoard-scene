@@ -1,6 +1,6 @@
 {
 	"name": "@hoard-engine/scene",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "HOARD engine: the world canvas renderer — view-typed compositing for tiles, walls, doors, lights, actors, items and floating text",
 	"keywords": [
 		"canvas",

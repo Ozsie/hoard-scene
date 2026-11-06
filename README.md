@@ -1,12 +1,16 @@
 # @hoard-engine/scene
 
 The world canvas renderer for the HOARD engine: view-typed compositing
-for tile worlds on canvas — the dungeon plane (grid, walls, doors,
-secrets, terrain, fog, pillars, portal), the light plane (gradients,
-aura/gas/sparkle effects, baked light sprites, the ambient darkness
-veil), the actor/item/overlay plane (sprite frames, fallback tiles,
-bars, pips) and floating text. Tileset handling with texture caching and
-corner-cap paint rules included. A leaf of the [HOARD
+for tile worlds on canvas. Two projections are included: the top-down
+plane — the dungeon layer (grid, walls, doors, secrets, terrain, fog,
+pillars, portal), the light layer (gradients, aura/gas/sparkle effects,
+baked light sprites, the ambient darkness veil), the actor/item/overlay
+layer (sprite frames, fallback tiles, bars, pips) and floating text, all
+with tileset handling, texture caching and corner-cap paint rules — and
+the 2.5D isometric plane (`createIsoProjection` + `SceneIsoView`), which
+draws diamond floors, extruded wall prisms and painter-sorted upright
+actors, plus an additive light pass over consumer-resolved lit-area
+polygons. A leaf of the [HOARD
 engine](https://github.com/Ozsie/drakriddarna/blob/main/docs/engine-packages.md)
 — the renderer never gains game knowledge: everything it draws arrives
 as plain view models.
@@ -82,6 +86,12 @@ renderLights(ctx, cellSize, lightViews, false);
   grid.
 - `SceneLightView` — one resolved light: center, colour, intensity,
   radius, polygon, sparkles, bake tokens.
+- `SceneIsoWorldView` / `SceneIsoActorView` / `SceneIsoLightView` — the
+  isometric plane: string grid rows over the consumer's wall/door
+  tokens, palette and wall extrusion height; upright actors at their
+  feet positions; and lights whose lit-area polygons the consumer has
+  already resolved against its own occlusion world
+  (`drawIsoWorldFrame`, `drawIsoLights`).
 - `SceneActorView` / `SceneItemView` / `SceneHeroOverlayView` /
   `SceneFloatingText` — the animated planes.
 

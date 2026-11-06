@@ -6,12 +6,16 @@
 //
 // The surface is organized top-down: the view-model contracts, the
 // tileset handling and texture caching, the dungeon-plane compositing,
-// the light-plane compositing, the actor/item/overlay plane and the
+// the light-plane compositing, the isometric plane (projection, screen
+// mapping, painter compositing), the actor/item/overlay plane and the
 // floating-text core.
 
 export * from './contracts';
 export * from './dungeonView';
 export * from './lightsView';
+export * from './isoProjection';
+export * from './isoView';
+export * from './isoCanvas';
 export * from './cellVocabulary';
 export * from './tileTextureCache';
 export * from './tiles';

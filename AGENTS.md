@@ -6,18 +6,24 @@ renderer: view-typed compositing for the dungeon plane (grid, walls,
 doors, secrets, terrain, fog, pillars, portal), the light plane
 (gradients, effect shapes, baked sprites, the ambient darkness veil),
 the actor/item/overlay plane (sprite frames, fallback tiles, bars,
-pips) and floating text — all driven by plain view models. Extracted
-from the game repo's `src/scene/` + the world-rendering half of
-`src/dungeon/` at step 9 of the extraction order; the game keeps the
+pips) and floating text — all driven by plain view models. The
+top-down cores were extracted from the drakriddarna repo's `src/scene/`
+and `src/dungeon/` (the world-rendering half) at step 9 of the
+extraction order; the isometric cores (projection, screen mapping,
+painter compositing, the additive light pass) arrived from the
+metroidvania repo's `src/game/scene/` at 0.2.0. The games keep the
 adapters (GameState → view models) and all assets.
 
 ## What this package is
 
 - The view-model renderer for a tile world on canvas: every drawing
   core consumes only the plain shapes declared in `contracts.ts`,
-  `dungeonView.ts` and `lightsView.ts`. No GameState, Actor, Monster or
-  any game type crosses the seam; named tile references, resolved texts
-  and classified data arrive as view data.
+  `dungeonView.ts`, `lightsView.ts` and the iso modules
+  (`isoProjection.ts`, `isoView.ts`, `isoCanvas.ts`). No GameState,
+  Actor, Monster or any game type crosses the seam; named tile
+  references, resolved texts and classified data arrive as view data.
+  The iso light views arrive fully resolved (polygon, center, radius,
+  brightness), so the iso light pass never touches a lighting engine.
 - Tileset handling with texture caching (the built-in tileset's slot
   layout, corner caps, the off-screen tile canvas), corner-cap and
   wall-run paint rules, fog-cloud cloud caching.
@@ -79,8 +85,9 @@ work done.
   TypeScript is in strict mode — no `any`, no `console`.
 - Tests are colocated as `*.test.ts` next to the module they cover.
 - The unit tests here cover the package's pure computation
-  (sprite-sheet rect math, surface/boundary invariants); the compositing
-  cores are exercised through the originating game's facade tests,
+  (sprite-sheet rect math, iso projection and screen mapping,
+  surface/boundary invariants); the compositing cores are exercised
+  through the originating game's facade tests,
   which drive them through the view models and pin the visual rules
   (wall runs, doors, terrain overlays, fog, light effects).
 - `dist/` is build output — never edit it, never commit it.
