@@ -97,7 +97,12 @@ renderLights(ctx, cellSize, lightViews, false);
 
 The package also exports the light-compositing controls
 (`setLightBlurDisabled`, `clearLightSpriteCache`), the tile texture
-cache and sprite-sheet math.
+cache and sprite-sheet math: a format-neutral character clip model
+(uniform direction-row grids, per-frame rects with authored
+durations, pivot anchoring) that every sheet format shares, plus
+`parseSpriteSheetManifest` for the Godot-style manifests shipped next
+to the character sheets. New sheet formats parse into the same clip
+types rather than adding format branches to the math.
 
 Browser-bound by nature (canvas); everything tolerates a headless
 environment by falling back to direct drawing when offscreen canvases

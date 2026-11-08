@@ -27,6 +27,14 @@ adapters (GameState → view models) and all assets.
 - Tileset handling with texture caching (the built-in tileset's slot
   layout, corner caps, the off-screen tile canvas), corner-cap and
   wall-run paint rules, fog-cloud cloud caching.
+- Character sprite-sheet clip math: a format-neutral clip model
+  (ordered atlas-rect frames with authored durations and loop flags)
+  with uniform direction-row grid selection, pivot-anchored draw
+  origins and `parseSpriteSheetManifest` for the Godot-style manifests
+  (the `aligned.json`/`animation.json` files shipped with the
+  character sheets). New sheet formats are added as sibling parsers
+  mapping into the clip model — never as format branches in the
+  selection math (`spriteClips.ts`).
 - Like every HOARD engine package, it is designed to be pluggable and
   interoperable, and as standalone as possible: individually adoptable,
   swappable and usable without any other HOARD package, game or
