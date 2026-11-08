@@ -44,18 +44,41 @@ export type SpriteClip = {
   frames: readonly SpriteClipFrame[];
 };
 
+// The timing half of a uniform-grid clip: which frame of a row the
+// clip is on at a given time. Looping clips wrap at their frame count;
+// non-looping clips hold their last frame. Non-positive frame counts
+// clamp to one frame, and a non-positive duration freezes the clip on
+// its first frame. Consumers that compose indexes (row/column
+// selection over separately described sheets) read the frame index;
+// consumers of the full grid descriptor use `spriteGridFrameAt`.
+export type SpriteGridTiming = {
+  frameCount: number;
+  frameDurationMs: number;
+  loop?: boolean;
+};
+
+export const spriteGridFrameIndex = (
+  timing: SpriteGridTiming,
+  timeMs: number,
+): number => {
+  const frameCount = Math.max(1, Math.floor(timing.frameCount));
+  const time = Math.max(0, timeMs);
+  const rawFrame =
+    timing.frameDurationMs > 0 ? Math.floor(time / timing.frameDurationMs) : 0;
+  return timing.loop === false
+    ? Math.min(rawFrame, frameCount - 1)
+    : rawFrame % frameCount;
+};
+
 // Where in the sheet the uniform-grid clip's frame at `timeMs` sits.
 // Time before the first frame reads as 0; non-looping clips hold
 // their last frame. Non-positive cell sides and frame counts clamp to
 // one frame, and a non-positive duration freezes the clip on its
 // first frame.
-export type SpriteGridClip = {
+export type SpriteGridClip = SpriteGridTiming & {
   cellWidth: number;
   cellHeight: number;
   row: number;
-  frameCount: number;
-  frameDurationMs: number;
-  loop?: boolean;
 };
 
 export const spriteGridFrameAt = (
@@ -64,14 +87,7 @@ export const spriteGridFrameAt = (
 ): SpriteClipSource => {
   const cellWidth = Math.max(1, clip.cellWidth);
   const cellHeight = Math.max(1, clip.cellHeight);
-  const frameCount = Math.max(1, Math.floor(clip.frameCount));
-  const time = Math.max(0, timeMs);
-  const rawFrame =
-    clip.frameDurationMs > 0 ? Math.floor(time / clip.frameDurationMs) : 0;
-  const frame =
-    clip.loop === false
-      ? Math.min(rawFrame, frameCount - 1)
-      : rawFrame % frameCount;
+  const frame = spriteGridFrameIndex(clip, timeMs);
   return {
     sx: frame * cellWidth,
     sy: Math.max(0, clip.row) * cellHeight,

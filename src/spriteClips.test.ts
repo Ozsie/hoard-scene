@@ -5,6 +5,7 @@ import {
   spriteClipKey,
   spriteDirectionRow,
   spriteGridFrameAt,
+  spriteGridFrameIndex,
 } from './spriteClips';
 
 const sheetDirections = ['south', 'east', 'north', 'west'];
@@ -108,6 +109,48 @@ describe('spriteGridFrameAt', () => {
       sh: 64,
     });
     expect(spriteGridFrameAt(clip, -100).sx).toBe(0);
+  });
+});
+
+describe('spriteGridFrameIndex', () => {
+  it('wraps looping clips at their frame count', () => {
+    const timing = { frameCount: 8, frameDurationMs: 100 };
+    expect(spriteGridFrameIndex(timing, 0)).toBe(0);
+    expect(spriteGridFrameIndex(timing, 750)).toBe(7);
+    expect(spriteGridFrameIndex(timing, 800)).toBe(0);
+    expect(spriteGridFrameIndex(timing, -100)).toBe(0);
+  });
+
+  it('holds the last frame of non-looping clips', () => {
+    const timing = { frameCount: 4, frameDurationMs: 540, loop: false };
+    expect(spriteGridFrameIndex(timing, 0)).toBe(0);
+    expect(spriteGridFrameIndex(timing, 540)).toBe(1);
+    expect(spriteGridFrameIndex(timing, 10_000)).toBe(3);
+  });
+
+  it('agrees with spriteGridFrameAt from the same timing', () => {
+    const clip = {
+      cellWidth: 128,
+      cellHeight: 128,
+      row: 5,
+      frameCount: 15,
+      frameDurationMs: 40,
+      loop: false as const,
+    };
+    for (const timeMs of [0, 39, 40, 599, 600, 10_000]) {
+      expect(spriteGridFrameIndex(clip, timeMs) * clip.cellWidth).toBe(
+        spriteGridFrameAt(clip, timeMs).sx,
+      );
+    }
+  });
+
+  it('clamps degenerate timing to the first frame', () => {
+    expect(
+      spriteGridFrameIndex({ frameCount: 0, frameDurationMs: 0 }, 99),
+    ).toBe(0);
+    expect(
+      spriteGridFrameIndex({ frameCount: -3, frameDurationMs: -5 }, -99),
+    ).toBe(0);
   });
 });
 
