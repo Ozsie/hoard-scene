@@ -47,6 +47,32 @@ describe('parseSpriteSheetManifest', () => {
     expect(bowWest?.loop).toBe(false);
   });
 
+  it('parses per-clip cell, pivot and sheet values', () => {
+    const manifest = parseSpriteSheetManifest({
+      cell: [80, 80],
+      pivot: [40, 70],
+      clips: {
+        idle_south: {
+          cell: [80, 80],
+          pivot: [40, 70],
+          sheet: 'idle.png',
+          durations_ms: [540, 540, 540, 540],
+          frames: [
+            { rect: [0, 0, 80, 80] },
+            { rect: [80, 0, 80, 80] },
+            { rect: [160, 0, 80, 80] },
+            { rect: [240, 0, 80, 80] },
+          ],
+        },
+      },
+    });
+    const idleSouth = manifest.clips['idle_south'];
+    expect(idleSouth?.cell).toEqual([80, 80]);
+    expect(idleSouth?.pivot).toEqual([40, 70]);
+    expect(idleSouth?.sheet).toBe('idle.png');
+    expect(idleSouth?.frames[1]?.durationMs).toBe(540);
+  });
+
   it('keeps unknown action and direction metadata optional', () => {
     const manifest = parseSpriteSheetManifest({
       clips: { walk_north: { frames: [{ rect: [0, 0, 64, 64] }] } },
@@ -55,6 +81,9 @@ describe('parseSpriteSheetManifest', () => {
     expect(clip?.action).toBeUndefined();
     expect(clip?.direction).toBeUndefined();
     expect(clip?.loop).toBeUndefined();
+    expect(clip?.cell).toBeUndefined();
+    expect(clip?.pivot).toBeUndefined();
+    expect(clip?.sheet).toBeUndefined();
     expect(clip?.frames[0]?.durationMs).toBe(0);
   });
 

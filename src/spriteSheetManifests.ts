@@ -2,22 +2,35 @@
 // `aligned.json` and `animations/animation.json` files shipped next to
 // the character sprite sheets: the atlas image, cell and pivot values,
 // the sheet's direction row order, and clips keyed `action_direction`
-// with per-frame `rect` and `duration_ms`. The manifest parses into
-// the format-neutral clip types from spriteClips.ts, so frame
-// selection and pivot anchoring are shared with every other sheet
-// format. A new sheet format lands here as a sibling parser that maps
-// into the same clip model — never as a format branch in the math.
+// with per-frame `rect` and `duration_ms` — clips may carry their own
+// cell, pivot and sheet values over the manifest-level ones. The
+// manifest parses into the format-neutral clip types from
+// spriteClips.ts, so frame selection and pivot anchoring are shared
+// with every other sheet format. A new sheet format lands here as a
+// sibling parser that maps into the same clip model — never as a
+// format branch in the math.
 import type { SpriteClip, SpriteClipFrame } from './spriteClips';
 
 // The Godot-style character-sheet manifest: the atlas image, its cell
 // and pivot, the sheet's direction row order and its clips keyed by
-// `action_direction`.
+// `action_direction`. A clip may carry its own cell, pivot and sheet
+// values (as the animation manifests do) to override the
+// manifest-level ones.
 export type SpriteSheetManifest = {
   image?: string;
   cell?: readonly [number, number];
   pivot?: readonly [number, number];
   directions?: readonly string[];
-  clips: Readonly<Record<string, SpriteClip>>;
+  clips: Readonly<Record<string, SpriteManifestClip>>;
+};
+
+// A manifest clip with its format-specific extras: per-clip cell and
+// pivot values and the sheet the clip's frames live on (relative to
+// the manifest). Values absent from the clip defer to the manifest.
+export type SpriteManifestClip = SpriteClip & {
+  cell?: readonly [number, number];
+  pivot?: readonly [number, number];
+  sheet?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -63,7 +76,7 @@ const rectOf = (raw: unknown, field: string): SpriteClipFrame['rect'] => {
   return [sx, sy, sw, sh];
 };
 
-const clipOf = (key: string, raw: unknown): SpriteClip => {
+const clipOf = (key: string, raw: unknown): SpriteManifestClip => {
   if (!isRecord(raw)) {
     throw new Error(`sprite-sheet manifest: clip '${key}' is not an object`);
   }
@@ -86,6 +99,9 @@ const clipOf = (key: string, raw: unknown): SpriteClip => {
     action: typeof raw.action === 'string' ? raw.action : undefined,
     direction: typeof raw.direction === 'string' ? raw.direction : undefined,
     loop: typeof raw.loop === 'boolean' ? raw.loop : undefined,
+    cell: pairOf(raw.cell, `clips.${key}.cell`),
+    pivot: pairOf(raw.pivot, `clips.${key}.pivot`),
+    sheet: typeof raw.sheet === 'string' ? raw.sheet : undefined,
     frames,
   };
 };
