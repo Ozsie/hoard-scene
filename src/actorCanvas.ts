@@ -93,7 +93,7 @@ export const renderHeroOverlay = (
 ): void => {
   // An outline rather than a tint: it marks the cell without covering
   // the floor and lighting beneath it.
-  ctx.strokeStyle = 'rgb(10 115 69 / 0.65)';
+  ctx.strokeStyle = view.walkableCellColor ?? 'rgb(10 115 69 / 0.65)';
   ctx.lineWidth = 1;
   view.walkableCells.forEach((cell) => {
     ctx.strokeRect(cell.x * cellSize, cell.y * cellSize, cellSize, cellSize);

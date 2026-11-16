@@ -4,6 +4,7 @@
 // data.
 
 import type { SceneFloatingText } from './contracts';
+import { worldToScreen, type SceneIsoView } from './isoView';
 
 export const DAMAGE_INDICATOR_DURATION_MS = 1000;
 
@@ -74,11 +75,16 @@ export const EFFECT_TRANSFORMS: Record<
 // Draws the floating texts, advancing by wall clock. Returns whether any
 // indicator is still active (within its duration), so the caller keeps
 // the render loop ticking.
-export const renderFloatingTexts = (
+const renderTexts = (
   ctx: CanvasRenderingContext2D,
   cellSize: number,
   texts: SceneFloatingText[],
-  currentTime: number = Date.now(),
+  currentTime: number,
+  positionToScreen: (position: SceneFloatingText['position']) => {
+    x: number;
+    y: number;
+  },
+  zoom: number,
 ): boolean => {
   if (texts.length === 0) {
     return false;
@@ -104,17 +110,13 @@ export const renderFloatingTexts = (
     const effectName = indicator.effect ?? 'float';
     const effectHandler =
       EFFECT_TRANSFORMS[effectName] ?? EFFECT_TRANSFORMS.float;
-    const transform = effectHandler(progress, cellSize);
+    const transform = effectHandler(progress, cellSize * zoom);
 
     const customOffsetX = indicator.offset?.x ?? 0;
     const customOffsetY = indicator.offset?.y ?? 0;
-    const x =
-      indicator.position.x * cellSize +
-      cellSize / 2 +
-      transform.xOffset +
-      customOffsetX;
-    const y =
-      indicator.position.y * cellSize + transform.yOffset + customOffsetY;
+    const position = positionToScreen(indicator.position);
+    const x = position.x + transform.xOffset + customOffsetX;
+    const y = position.y + transform.yOffset + customOffsetY;
 
     const text =
       indicator.text ??
@@ -129,12 +131,12 @@ export const renderFloatingTexts = (
     ctx.textBaseline = 'middle';
 
     const scale = transform.scale * (indicator.fontSizeScale ?? 1);
-    const fontSize = Math.round(cellSize * 0.45 * scale);
+    const fontSize = Math.round(cellSize * zoom * 0.45 * scale);
     ctx.font = `900 ${fontSize}px "Cinzel", "Arial Black", Impact, sans-serif`;
 
     // Outline / stroke for high contrast
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = Math.max(2, cellSize * 0.08);
+    ctx.lineWidth = Math.max(2, cellSize * zoom * 0.08);
     ctx.lineJoin = 'round';
     ctx.strokeText(text, x, y);
 
@@ -147,3 +149,44 @@ export const renderFloatingTexts = (
 
   return hasActiveIndicators;
 };
+
+// Draw floating texts at projected world positions without inheriting the
+// isometric canvas transform, so glyphs and their animation stay screen-aligned.
+export const renderIsoFloatingTexts = (
+  ctx: CanvasRenderingContext2D,
+  view: SceneIsoView,
+  cellSize: number,
+  texts: SceneFloatingText[],
+  currentTime: number = Date.now(),
+): boolean =>
+  renderTexts(
+    ctx,
+    cellSize,
+    texts,
+    currentTime,
+    (position) =>
+      worldToScreen(
+        view,
+        (position.x + 0.5) * cellSize,
+        (position.y + 0.5) * cellSize,
+      ),
+    view.projection.ax,
+  );
+
+export const renderFloatingTexts = (
+  ctx: CanvasRenderingContext2D,
+  cellSize: number,
+  texts: SceneFloatingText[],
+  currentTime: number = Date.now(),
+): boolean =>
+  renderTexts(
+    ctx,
+    cellSize,
+    texts,
+    currentTime,
+    (position) => ({
+      x: position.x * cellSize + cellSize / 2,
+      y: position.y * cellSize,
+    }),
+    1,
+  );

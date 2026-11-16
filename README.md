@@ -8,9 +8,9 @@ baked light sprites, the ambient darkness veil), the actor/item/overlay
 layer (sprite frames, fallback tiles, bars, pips) and floating text, all
 with tileset handling, texture caching and corner-cap paint rules — and
 the 2.5D isometric plane (`createIsoProjection` + `SceneIsoView`), which
-draws diamond floors, extruded wall prisms and painter-sorted upright
-actors, plus an additive light pass over consumer-resolved lit-area
-polygons. A leaf of the [HOARD
+draws diamond floors, extruded wall prisms, actors and consumer-provided
+sprite/prop painters in one depth-sorted queue, plus an additive light
+pass over consumer-resolved lit-area polygons. A leaf of the [HOARD
 engine](https://github.com/Ozsie/drakriddarna/blob/main/docs/engine-packages.md)
 — the renderer never gains game knowledge: everything it draws arrives
 as plain view models.
@@ -86,12 +86,20 @@ renderLights(ctx, cellSize, lightViews, false);
   grid.
 - `SceneLightView` — one resolved light: center, colour, intensity,
   radius, polygon, sparkles, bake tokens.
-- `SceneIsoWorldView` / `SceneIsoActorView` / `SceneIsoLightView` — the
-  isometric plane: string grid rows over the consumer's wall/door
-  tokens, palette and wall extrusion height; upright actors at their
-  feet positions; and lights whose lit-area polygons the consumer has
-  already resolved against its own occlusion world
-  (`drawIsoWorldFrame`, `drawIsoLights`).
+- `SceneIsoWorldView` / `SceneIsoActorView` / `SceneIsoPainterView` /
+  `SceneIsoLightView` — the isometric plane: string grid rows over the
+  consumer's wall/door tokens, palette and wall extrusion height, with
+  an optional hidden-cell token, per-cell terrain colours, floor overlays,
+  pit cells, and per-cell floor/wall/door painters. Floor painters replace
+  the floor diamond; wall and door painters join the depth-sorted queue.
+  Recessed pits are opt-in through `pitDepthPx`; the scene clips lowered
+  north/west faces to each connected pit opening and skips shared edges, while
+  optional per-cell pit painters are additionally clipped to each face polygon.
+  Separate pit groups receive separate opening clips. Without a depth value,
+  pit cells keep the flat fill. Upright actors and consumer-drawn sprites or props
+  share the depth queue; lights arrive with lit-area polygons the consumer has
+  already resolved against its own occlusion world (`drawIsoWorldFrame`,
+  `drawIsoLights`).
 - `SceneActorView` / `SceneItemView` / `SceneHeroOverlayView` /
   `SceneFloatingText` — the animated planes.
 

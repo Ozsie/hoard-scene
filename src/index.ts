@@ -16,6 +16,7 @@ export * from './dungeonView';
 export * from './lightsView';
 export * from './isoProjection';
 export * from './isoView';
+export * from './isoPits';
 export * from './isoCanvas';
 export * from './cellVocabulary';
 export * from './tileTextureCache';

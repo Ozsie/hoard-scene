@@ -65,6 +65,9 @@ export type SceneHeroOverlayView = {
   // Cells the current hero can walk to this turn (the game applies its
   // own discovery, blocking and line-of-sight rules before emitting).
   walkableCells: ScenePoint[];
+  // Optional stroke color for walkable cells; defaults to the standard
+  // green highlight.
+  walkableCellColor?: string;
   // Current-actor reticule position in cells, or null when there is none.
   marker: ScenePoint | null;
   // Per-hero bars and pips, at their visual (animated) positions.
