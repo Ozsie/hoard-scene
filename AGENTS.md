@@ -24,6 +24,9 @@ adapters (GameState → view models) and all assets.
   references, resolved texts and classified data arrive as view data.
   The iso light views arrive fully resolved (polygon, center, radius,
   brightness), so the iso light pass never touches a lighting engine.
+- Generic isometric helpers include inverse screen mapping, projected
+  tile dimensions and the fog-light transform; the frame-rate governor
+  consumes measured costs while the caller owns its clock and scheduling.
 - Tileset handling with texture caching (the built-in tileset's slot
   layout, corner caps, the off-screen tile canvas), corner-cap and
   wall-run paint rules, fog-cloud cloud caching.
@@ -93,8 +96,9 @@ work done.
   TypeScript is in strict mode — no `any`, no `console`.
 - Tests are colocated as `*.test.ts` next to the module they cover.
 - The unit tests here cover the package's pure computation
-  (sprite-sheet rect math, iso projection and screen mapping,
-  surface/boundary invariants); the compositing cores are exercised
+  (sprite-sheet rect math, iso projection and screen mapping, tile
+  dimensions, fog mapping, frame-rate hysteresis and surface/boundary
+  invariants); the compositing cores are exercised
   through the originating game's facade tests,
   which drive them through the view models and pin the visual rules
   (wall runs, doors, terrain overlays, fog, light effects).

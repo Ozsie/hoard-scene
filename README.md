@@ -10,7 +10,10 @@ with tileset handling, texture caching and corner-cap paint rules — and
 the 2.5D isometric plane (`createIsoProjection` + `SceneIsoView`), which
 draws diamond floors, extruded wall prisms, actors and consumer-provided
 sprite/prop painters in one depth-sorted queue, plus an additive light
-pass over consumer-resolved lit-area polygons. A leaf of the [HOARD
+pass over consumer-resolved lit-area polygons. Isometric projection helpers
+also provide inverse screen mapping, projected tile sizing and fog-light
+mapping; a pure frame-rate governor consumes caller-measured frame costs while
+the application retains the clock and render scheduling. A leaf of the [HOARD
 engine](https://github.com/Ozsie/drakriddarna/blob/main/docs/engine-packages.md)
 — the renderer never gains game knowledge: everything it draws arrives
 as plain view models.

@@ -9,7 +9,12 @@ import {
   isoPlaneToWorld,
   worldToIsoPlane,
 } from './isoProjection';
-import { createIsoView, screenWorldBounds, worldToScreen } from './isoView';
+import {
+  createIsoView,
+  screenToWorld,
+  screenWorldBounds,
+  worldToScreen,
+} from './isoView';
 
 // A default 2:1 projection for 32px cells.
 const projection = createIsoProjection(32);
@@ -44,6 +49,23 @@ describe('worldToScreen', () => {
     const plane = worldToIsoPlane(projection, 100, 64);
     expect(screen.x).toBe(plane.x - anchor.x + 400);
     expect(screen.y).toBe(plane.y - anchor.y + 300);
+  });
+});
+
+describe('screenToWorld', () => {
+  it('round-trips world coordinates through the projected view', () => {
+    const view = createIsoView({ x: 480, y: 384 }, 800, 600, 32, projection);
+    const world = { x: 624, y: 288 };
+    const screen = worldToScreen(view, world.x, world.y);
+
+    expect(screenToWorld(view, screen.x, screen.y)).toEqual(world);
+  });
+
+  it('maps the screen center to the camera position', () => {
+    const camera = { x: 100, y: -40 };
+    const view = createIsoView(camera, 1024, 768, 32, projection);
+
+    expect(screenToWorld(view, 512, 384)).toEqual(camera);
   });
 });
 

@@ -57,6 +57,23 @@ export const worldToScreen = (
   };
 };
 
+// The inverse screen mapping: canvas pixels → world-plane pixels.
+export const screenToWorld = (
+  view: SceneIsoView,
+  sx: number,
+  sy: number,
+): ScenePoint => {
+  const offset = isoPlaneToWorld(
+    view.projection,
+    sx - view.width / 2,
+    sy - view.height / 2,
+  );
+  return {
+    x: view.camera.x + offset.x,
+    y: view.camera.y + offset.y,
+  };
+};
+
 // The world-plane rectangle covering the screen: inverse-project the four
 // corners and pad by `padPx` (the consumer's wall extrusion height plus
 // the culling safety margin), so the tile pass can cull in world space.
