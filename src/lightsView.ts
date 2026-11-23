@@ -54,6 +54,13 @@ export type SceneLightView = {
   // unchanged pair means the cached sprite is reusable pixel-for-pixel.
   spriteIdentity: string;
   occlusionKey: string;
+  // Optional sampled falloff profile, resolved by the consumer (e.g. from
+  // a lighting engine's `sampleFalloffProfile`): scalar values evenly
+  // spaced from the center (first sample, t = 0) to the radius edge (last
+  // sample, t = 1), mapped onto the gradient stops in order. Without it
+  // the renderer keeps its legacy built-in curve, so existing consumers
+  // are unaffected.
+  falloff?: number[];
 };
 
 // The visible part of the world, in grid cells: the rectangle starting at

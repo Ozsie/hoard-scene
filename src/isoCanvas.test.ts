@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   drawIsoHeroOverlay,
+  drawIsoLights,
   drawIsoWorldFrame,
+  type SceneIsoLightView,
   type SceneIsoPainterView,
   type SceneIsoWorldView,
 } from './isoCanvas';
@@ -407,5 +409,108 @@ describe('drawIsoHeroOverlay', () => {
 
     expect(strokes).toBe(2);
     expect(fills).toBe(5);
+  });
+});
+
+describe('drawIsoLights', () => {
+  const createLightCtx = () => {
+    const stops: [number, string][] = [];
+    const gradient = {
+      addColorStop: (offset: number, color: string) => {
+        stops.push([offset, color]);
+      },
+    };
+    const fills: unknown[] = [];
+    let currentFillStyle: unknown;
+    const ctx = {
+      get fillStyle() {
+        return currentFillStyle;
+      },
+      set fillStyle(value: unknown) {
+        currentFillStyle = value;
+      },
+      globalCompositeOperation: 'source-over',
+      globalAlpha: 1,
+      save: () => undefined,
+      restore: () => undefined,
+      beginPath: () => undefined,
+      moveTo: () => undefined,
+      lineTo: () => undefined,
+      closePath: () => undefined,
+      clip: () => undefined,
+      translate: () => undefined,
+      scale: () => undefined,
+      createRadialGradient: () => gradient,
+      fillRect: () => fills.push(currentFillStyle),
+    } as unknown as CanvasRenderingContext2D;
+    return { ctx, stops, fills };
+  };
+
+  const view = () =>
+    createIsoView({ x: 16, y: 16 }, 100, 100, 32, createIsoProjection(32));
+
+  const light = (
+    overrides: Partial<SceneIsoLightView> = {},
+  ): SceneIsoLightView => ({
+    center: { x: 16, y: 16 },
+    radius: 32,
+    color: '#FFB85C',
+    intensity: 0.8,
+    polygon: [
+      { x: 0, y: 0 },
+      { x: 32, y: 0 },
+      { x: 32, y: 32 },
+      { x: 0, y: 32 },
+    ],
+    ...overrides,
+  });
+
+  it('maps resolved falloff samples onto the gradient stops', () => {
+    const { ctx, stops, fills } = createLightCtx();
+    drawIsoLights(ctx, view(), [light({ falloff: [1, 0.5, 0] })]);
+    expect(stops).toEqual([
+      [0, 'rgba(255, 184, 92, 0.8)'],
+      [0.5, 'rgba(255, 184, 92, 0.4)'],
+      [1, 'rgba(255, 184, 92, 0)'],
+    ]);
+    expect(fills.length).toBe(1);
+  });
+
+  it('keeps the legacy two-stop linear gradient without samples', () => {
+    const { ctx, stops } = createLightCtx();
+    drawIsoLights(ctx, view(), [light()]);
+    expect(stops).toEqual([
+      [0, 'rgba(255, 184, 92, 0.8)'],
+      [1, 'rgba(255, 184, 92, 0)'],
+    ]);
+  });
+
+  it('handles three-digit hex, rgb() and named colors without six-digit-hex assumptions', () => {
+    const shortHex = createLightCtx();
+    drawIsoLights(shortHex.ctx, view(), [
+      light({ color: '#abc', falloff: [1, 0] }),
+    ]);
+    expect(shortHex.stops[0][1]).toBe('rgba(170, 187, 204, 0.8)');
+
+    const functional = createLightCtx();
+    drawIsoLights(functional.ctx, view(), [
+      light({ color: 'rgb(255, 184, 92)', falloff: [1, 0] }),
+    ]);
+    expect(functional.stops[0][1]).toBe('rgba(255, 184, 92, 0.8)');
+
+    const named = createLightCtx();
+    drawIsoLights(named.ctx, view(), [
+      light({ color: 'red', falloff: [1, 0] }),
+    ]);
+    // Named colors cannot carry alpha in a stop string: the raw color is
+    // used at the center, and the edge stays fully transparent.
+    expect(named.stops[0][1]).toBe('red');
+    expect(named.stops[1][1]).toBe('rgba(0, 0, 0, 0)');
+  });
+
+  it('skips lights with empty polygons', () => {
+    const { ctx, fills } = createLightCtx();
+    drawIsoLights(ctx, view(), [light({ polygon: [] })]);
+    expect(fills.length).toBe(0);
   });
 });

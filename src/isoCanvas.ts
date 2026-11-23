@@ -7,6 +7,7 @@
 // colours and extrusion as resolved palette/content fields.
 
 import { findCell } from './cellVocabulary';
+import { gradientStopColor } from './colors';
 import type { SceneHeroOverlayView, ScenePoint } from './contracts';
 import { isoDepth } from './isoProjection';
 import { drawIsoPitCells, type SceneIsoPitPainterView } from './isoPits';
@@ -89,11 +90,24 @@ export type SceneIsoLightView = {
   center: ScenePoint;
   // The light's radius in world pixels.
   radius: number;
-  // The light's colour (hex or css) and peak brightness, 0..1.
+  // The light's colour (any supported CSS form) and peak brightness 0..1,
+  // with the per-frame animation scale already multiplied in.
   color: string;
   intensity: number;
   // The lit-area polygon in world pixels; empty polygons draw nothing.
   polygon: ScenePoint[];
+  // The open effect name ('static' | 'pulse' | 'flicker' | ...), resolved
+  // by the adapter — carried for parity with the top-down light contract so
+  // later stages can branch on it without a contract change.
+  effect?: string;
+  // The blur in pixels resolved from the light's softness, same semantics
+  // as the top-down contract's `blurPx`.
+  blurPx?: number;
+  // Optional sampled falloff profile resolved by the consumer: scalars
+  // evenly spaced from center to radius edge, mapped onto the gradient
+  // stops in order. Without it the legacy two-stop linear gradient is
+  // used, so existing consumers keep their historical output.
+  falloff?: number[];
 };
 
 type DrawQueueEntry = {
@@ -519,11 +533,24 @@ export const drawIsoLights = (
       ctx.scale(1, by / ax);
     }
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusScreen);
-    const intensityHex = Math.round(light.intensity * 255)
-      .toString(16)
-      .padStart(2, '0');
-    gradient.addColorStop(0, `${light.color}${intensityHex}`);
-    gradient.addColorStop(1, `${light.color}00`);
+    const peak = Math.min(1, Math.max(0, light.intensity));
+    const samples = light.falloff;
+    if (samples !== undefined && samples.length >= 2) {
+      // Shared falloff profile resolved by the consumer: the samples map
+      // evenly onto [0, 1], so the isometric pass attenuates exactly like
+      // the top-down renderer. Colors go through gradientStopColor, so
+      // any supported CSS form works — no six-digit-hex assumption.
+      for (let i = 0; i < samples.length; i += 1) {
+        gradient.addColorStop(
+          i / (samples.length - 1),
+          gradientStopColor(light.color, peak * samples[i]),
+        );
+      }
+    } else {
+      // Legacy compatibility: the historical two-stop linear gradient.
+      gradient.addColorStop(0, gradientStopColor(light.color, peak));
+      gradient.addColorStop(1, gradientStopColor(light.color, 0));
+    }
     ctx.fillStyle = gradient;
     ctx.fillRect(
       -radiusScreen,

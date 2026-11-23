@@ -11,6 +11,7 @@
 // mapping, painter compositing), the actor/item/overlay plane and the
 // floating-text core.
 
+export * from './colors';
 export * from './contracts';
 export * from './dungeonView';
 export * from './lightsView';

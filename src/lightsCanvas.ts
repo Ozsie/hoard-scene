@@ -5,29 +5,9 @@
 // brightness, sparkles) is resolved by the consumer before the light
 // reaches this module; no game state, no lighting-engine imports.
 import { LightEffect } from './cellVocabulary';
+import { gradientStopColor } from './colors';
 import type { ScenePoint } from './contracts';
 import type { SceneLightView } from './lightsView';
-
-const rgbaFromColor = (color: string, alpha: number): string => {
-  const hex = color.replace('#', '');
-  const expand = (part: string): number =>
-    parseInt(part.length === 1 ? part + part : part, 16);
-  if (hex.length === 3) {
-    const r = expand(hex[0]);
-    const g = expand(hex[1]);
-    const b = expand(hex[2]);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  if (hex.length === 6) {
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  // Named colors and other formats: let them render as-is with the alpha
-  // handled through the gradient stop opacity.
-  return color;
-};
 
 // Ambient (dungeon-wide) light level used when a dungeon does not specify
 // one: 1 = fully lit, 0 = pitch black.
@@ -188,7 +168,7 @@ const createAuraGradient = (
   );
   const stops = [0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
   stops.forEach((t) => {
-    gradient.addColorStop(t, rgbaFromColor(color, auraRingAlpha(t, peak)));
+    gradient.addColorStop(t, gradientStopColor(color, auraRingAlpha(t, peak)));
   });
   return gradient;
 };
@@ -237,7 +217,7 @@ const createGasGradient = (
     // Flat through the middle of the cloud, soft fall at the rim (falling
     // to exactly zero at the edge).
     const rim = t <= 0.55 ? 1 : Math.pow(Math.max(0, (1 - t) / 0.45), 1.5);
-    gradient.addColorStop(t, rgbaFromColor(color, alpha * rim));
+    gradient.addColorStop(t, gradientStopColor(color, alpha * rim));
   });
   return gradient;
 };
@@ -271,6 +251,12 @@ const renderAura = (
 // stops, so the curve is sampled densely — a coarse stop set (or a separate
 // small "core" gradient) leaves slope changes that show up as distinct rings
 // around the center.
+//
+// When the consumer resolved a shared falloff profile into `view.falloff`
+// (sampled scalars from center to edge), the samples become the stops,
+// mapped evenly onto [0, 1] — both projections then attenuate identically.
+// Without samples the legacy nine-stop quadratic is used, so consumers
+// that do not opt in keep their historical output.
 const createLightGradient = (
   ctx: CanvasRenderingContext2D,
   view: SceneLightView,
@@ -292,11 +278,21 @@ const createLightGradient = (
     1,
     intensity * 1.5 * (scaleOverride ?? view.intensityScale),
   );
-  const falloffStops = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
-  falloffStops.forEach((t) => {
-    const alpha = peakIntensity * Math.pow(1 - t, 2);
-    gradient.addColorStop(t, rgbaFromColor(color, alpha));
-  });
+  const samples = view.falloff;
+  if (samples !== undefined && samples.length >= 2) {
+    for (let i = 0; i < samples.length; i += 1) {
+      gradient.addColorStop(
+        i / (samples.length - 1),
+        gradientStopColor(color, peakIntensity * samples[i]),
+      );
+    }
+  } else {
+    const falloffStops = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+    falloffStops.forEach((t) => {
+      const alpha = peakIntensity * Math.pow(1 - t, 2);
+      gradient.addColorStop(t, gradientStopColor(color, alpha));
+    });
+  }
   return gradient;
 };
 

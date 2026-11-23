@@ -88,7 +88,14 @@ renderLights(ctx, cellSize, lightViews, false);
   portal, plus the consumer-resolved corner classification and sealed
   grid.
 - `SceneLightView` — one resolved light: center, colour, intensity,
-  radius, polygon, sparkles, bake tokens.
+  radius, polygon, sparkles, bake tokens, plus an optional `falloff`
+  sample array (scalars from center to radius edge) that the gradient
+  stops are built from — without it the legacy built-in curve is used.
+  `SceneIsoLightView` carries the same `falloff` plus the resolved
+  `effect` and `blurPx` for parity between projections. Light colors go
+  through `colorWithAlpha`/`gradientStopColor`: #rgb, #rrggbb,
+  #rrggbbaa and rgb()/rgba() all work, with a documented fallback for
+  named colors — no six-digit-hex assumption anywhere.
 - `SceneIsoWorldView` / `SceneIsoActorView` / `SceneIsoPainterView` /
   `SceneIsoLightView` — the isometric plane: string grid rows over the
   consumer's wall/door tokens, palette and wall extrusion height, with
